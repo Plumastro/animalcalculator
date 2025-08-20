@@ -1,0 +1,90 @@
+{% comment %}
+Section: Age → Année de naissance (via API Render)
+{% endcomment %}
+
+<section id="age-birthyear" class="page-width">
+  <form id="age-form">
+    <label for="age-input">Votre âge</label>
+    <input id="age-input" name="age" type="number" required min="0" max="150" />
+    <button type="submit">Calculer mon année de naissance</button>
+  </form>
+
+  <div id="result" style="margin-top:0.75rem;"></div>
+</section>
+
+<script>
+  (function(){
+    const root = document.getElementById('age-birthyear');
+    if (!root || root.dataset.initialized) return;
+    root.dataset.initialized = 'true';
+
+    // Remplacez par votre URL Render une fois déployé
+    const API_URL = '{{ section.settings.api_url | escape }}';
+    const form = document.getElementById('age-form');
+    const resultEl = document.getElementById('result');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(form));
+      
+      // Validation côté client
+      const age = parseInt(data.age);
+      if (age < 0 || age > 150) {
+        resultEl.innerHTML = '<p style="color: red;">Veuillez entrer un âge valide (0-150 ans)</p>';
+        return;
+      }
+      
+      resultEl.innerHTML = '<p style="color: blue;">Calcul en cours…</p>';
+      
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ age: age }),
+        });
+        
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.detail || 'Erreur serveur');
+        }
+        
+        const json = await res.json();
+        resultEl.innerHTML = `
+          <div style="background: #f0f8ff; padding: 1rem; border-radius: 8px; border-left: 4px solid #007cba;">
+            <h3 style="margin: 0 0 0.5rem 0; color: #007cba;">🎉 Résultat !</h3>
+            <p style="margin: 0; font-size: 1.1rem;">
+              <strong>Votre année de naissance : ${json.birth_year}</strong>
+            </p>
+          </div>
+        `;
+      } catch (err) {
+        resultEl.innerHTML = `
+          <div style="background: #fff5f5; padding: 1rem; border-radius: 8px; border-left: 4px solid #e53e3e;">
+            <p style="margin: 0; color: #e53e3e;">❌ Erreur : ${err.message}</p>
+          </div>
+        `;
+      }
+    });
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Âge → Année de naissance",
+  "settings": [
+    {
+      "type": "text",
+      "id": "api_url",
+      "label": "URL API Render",
+      "default": "https://votre-service.onrender.com/birthyear",
+      "info": "Endpoint FastAPI qui renvoie { birth_year }"
+    }
+  ],
+  "presets": [
+    { "name": "Âge → Année de naissance" }
+  ],
+  "enabled_on": {
+    "templates": ["*"]
+  }
+}
+{% endschema %}
