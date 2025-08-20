@@ -1,9 +1,19 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import datetime
 import uvicorn
 
 app = FastAPI(title="Calculateur d'année de naissance", version="1.0.0")
+
+# Configuration CORS pour permettre les requêtes depuis Shopify
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # En production, spécifiez vos domaines Shopify
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class AgeRequest(BaseModel):
     age: int
